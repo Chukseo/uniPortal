@@ -66,8 +66,10 @@ export function ExamOfficerView() {
   const [examInvigilator, setExamInvigilator] = useState("Dr. Ayodeji Ogunleye");
   const [examCapacity, setExamCapacity] = useState(120);
 
-  const selectedCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
-  const courseScores = scores.filter((s) => s.courseId === selectedCourseId);
+  const instCourses = courses.filter((c) => !c.institutionId || c.institutionId === currentInstitution.id);
+  const availableCourses = instCourses.length > 0 ? instCourses : courses;
+  const selectedCourse = availableCourses.find((c) => c.id === selectedCourseId) || availableCourses[0];
+  const courseScores = scores.filter((s) => s.courseId === (selectedCourse?.id || selectedCourseId));
 
   const isApproved = courseScores.some((s) => s.state === "Approved");
   const isPublished = courseScores.some((s) => s.state === "Published");

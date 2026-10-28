@@ -50,13 +50,14 @@ export function RegistrarView() {
   const [matricSuccessMsg, setMatricSuccessMsg] = useState("");
 
   const filteredStudents = students.filter((s) => {
+    const matchesInst = !s.institutionId || s.institutionId === currentInstitution.id;
     const matchesSearch =
       s.firstName.toLowerCase().includes(search.toLowerCase()) ||
       s.lastName.toLowerCase().includes(search.toLowerCase()) ||
       s.matricNumber.toLowerCase().includes(search.toLowerCase());
     const matchesLevel = levelFilter === "all" || s.level === levelFilter;
     const matchesStatus = statusFilter === "all" || s.enrollmentStatus === statusFilter;
-    return matchesSearch && matchesLevel && matchesStatus;
+    return matchesInst && matchesSearch && matchesLevel && matchesStatus;
   });
 
   const handleOpenMatricModal = (student: Student) => {

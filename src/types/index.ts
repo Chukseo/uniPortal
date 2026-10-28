@@ -246,7 +246,7 @@ export interface Student {
   enrollmentStatus: "Enrolled" | "Deferred" | "Withdrawn" | "Graduated";
   cgpa: number;
   totalCreditsEarned: number;
-  academicStanding: "First Class" | "Second Class Upper" | "Second Class Lower" | "Third Class" | "Probation";
+  academicStanding: "First Class" | "Second Class Upper" | "Second Class Lower" | "Third Class" | "Probation" | "Distinction" | "Upper Credit" | "Lower Credit" | "Pass" | "Merit";
   currentAccessCode?: string;
   isAccountActivated: boolean;
   isCourseRegistered: boolean;

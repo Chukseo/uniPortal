@@ -42,13 +42,14 @@ export function AdmissionsView() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const filteredApplicants = applicants.filter((a) => {
+    const matchesInst = !a.institutionId || a.institutionId === currentInstitution.id;
     const matchesSearch =
       a.firstName.toLowerCase().includes(search.toLowerCase()) ||
       a.lastName.toLowerCase().includes(search.toLowerCase()) ||
       a.applicationNumber.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
     const matchesEntry = entryTypeFilter === "all" || a.entryType === entryTypeFilter;
-    return matchesSearch && matchesStatus && matchesEntry;
+    return matchesInst && matchesSearch && matchesStatus && matchesEntry;
   });
 
   const handleIssueOffer = (appId: string) => {

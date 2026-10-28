@@ -39,11 +39,20 @@ export function IctAdminView() {
     addAnnouncement,
     updateStaffRole,
     updateGradingPolicy,
+    logAuditEvent,
   } = useDemoStore();
 
   const [activeTab, setActiveTab] = useState<
     "sessions" | "faculties" | "programmes" | "policy" | "grading" | "staff" | "announcements"
   >("sessions");
+
+  // Access Code Policy Form States
+  const [accessCodeTtl, setAccessCodeTtl] = useState(30);
+  const [maxVerificationAttempts, setMaxVerificationAttempts] = useState(5);
+  const [autoRevokePrevious, setAutoRevokePrevious] = useState(true);
+  const [dualApprovalExam, setDualApprovalExam] = useState(true);
+  const [requireOlevelPin, setRequireOlevelPin] = useState(true);
+  const [policySavedMsg, setPolicySavedMsg] = useState("");
 
   // Modal states
   const [modalType, setModalType] = useState<"faculty" | "dept" | "prog" | "session" | "announcement" | "grading" | null>(null);
@@ -139,6 +148,19 @@ export function IctAdminView() {
     setModalType(null);
     setAnnTitle("");
     setAnnContent("");
+  };
+
+  const handleSaveAccessPolicy = (e: React.FormEvent) => {
+    e.preventDefault();
+    logAuditEvent(
+      "Access-Code Policy Updated",
+      "Policy",
+      "ACCESS_POLICY",
+      "Success",
+      `Configured TTL: ${accessCodeTtl} days, Max attempts: ${maxVerificationAttempts}, Auto-revoke: ${autoRevokePrevious ? "Enabled" : "Disabled"}, Dual-approval: ${dualApprovalExam ? "Enabled" : "Disabled"}`
+    );
+    setPolicySavedMsg("Access-code lifecycle and security policy updated successfully!");
+    setTimeout(() => setPolicySavedMsg(""), 4500);
   };
 
   const handleSaveGradingPolicy = (e: React.FormEvent) => {
@@ -269,7 +291,7 @@ export function IctAdminView() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {sessions.map((sess) => (
+            {sessions.filter((s) => !s.institutionId || s.institutionId === currentInstitution.id).map((sess) => (
               <div
                 key={sess.id}
                 className={`p-5 rounded-2xl bg-white border ${
@@ -305,7 +327,9 @@ export function IctAdminView() {
       {activeTab === "faculties" && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-navy-950">Faculties ({faculties.length})</h3>
+            <h3 className="font-bold text-sm text-navy-950">
+              Faculties ({faculties.filter((f) => !f.institutionId || f.institutionId === currentInstitution.id).length})
+            </h3>
             <div className="flex space-x-2">
               <button
                 onClick={() => setModalType("faculty")}
@@ -325,7 +349,9 @@ export function IctAdminView() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {faculties.map((fac) => {
+            {faculties
+              .filter((f) => !f.institutionId || f.institutionId === currentInstitution.id)
+              .map((fac) => {
               const depts = departments.filter((d) => d.facultyId === fac.id);
               return (
                 <div key={fac.id} className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -386,7 +412,9 @@ export function IctAdminView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {programmes.map((p) => (
+                {programmes
+                  .filter((p) => !p.institutionId || p.institutionId === currentInstitution.id)
+                  .map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50">
                     <td className="p-3 font-mono font-bold text-brand-700">{p.code}</td>
                     <td className="p-3 font-bold text-navy-950">{p.name}</td>
@@ -466,7 +494,14 @@ export function IctAdminView() {
 
       {/* Tab: Policy */}
       {activeTab === "policy" && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {policySavedMsg && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center space-x-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{policySavedMsg}</span>
+            </div>
+          )}
+
           <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center space-x-2 text-navy-950 font-bold text-sm">
               <KeyRound className="w-5 h-5 text-brand-600" />
@@ -495,6 +530,108 @@ export function IctAdminView() {
               </div>
             </div>
           </div>
+
+          {/* Interactive Policy Configuration Panel */}
+          <form onSubmit={handleSaveAccessPolicy} className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h4 className="font-bold text-sm text-navy-950">Access-Code Security & Lifecycle Parameters</h4>
+                <p className="text-xs text-slate-500">Fine-tune code expiration, revocation behavior and verification security limits.</p>
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+              >
+                Save Policy Configuration
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Access Code Validity Duration (TTL)
+                </label>
+                <select
+                  value={accessCodeTtl}
+                  onChange={(e) => setAccessCodeTtl(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value={7}>7 Days (Strict Registration Window)</option>
+                  <option value={14}>14 Days (Standard Two-Week Clearance)</option>
+                  <option value={30}>30 Days (Recommended Default)</option>
+                  <option value={60}>60 Days (Extended Late Registration)</option>
+                </select>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Codes older than this TTL automatically lapse and require revalidation.
+                </span>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Bruteforce Lockout Threshold
+                </label>
+                <select
+                  value={maxVerificationAttempts}
+                  onChange={(e) => setMaxVerificationAttempts(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value={3}>3 Failed Attempts (High Security)</option>
+                  <option value={5}>5 Failed Attempts (Recommended Default)</option>
+                  <option value={10}>10 Failed Attempts (Permissive)</option>
+                </select>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Excessive invalid lookups temporarily freeze portal access for the IP/session.
+                </span>
+              </div>
+
+              <div className="md:col-span-2 pt-2 space-y-3 border-t border-slate-100">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRevokePrevious}
+                    onChange={(e) => setAutoRevokePrevious(e.target.checked)}
+                    className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                  />
+                  <div>
+                    <span className="font-semibold text-navy-950 block">Auto-Revoke Previous Stage Code on Progression</span>
+                    <span className="text-slate-500 text-[11px]">
+                      When student advances to next milestone (e.g., course registration to exam clearance), mark preceding code as &quot;Revoked&quot; while maintaining entitlement history.
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dualApprovalExam}
+                    onChange={(e) => setDualApprovalExam(e.target.checked)}
+                    className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                  />
+                  <div>
+                    <span className="font-semibold text-navy-950 block">Enforce Dual-Approval for Examination Docket Generation</span>
+                    <span className="text-slate-500 text-[11px]">
+                      Requires both Faculty Officer course vetting AND Bursary school fee zero-balance clearance before issuance of examination docket pass.
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={requireOlevelPin}
+                    onChange={(e) => setRequireOlevelPin(e.target.checked)}
+                    className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                  />
+                  <div>
+                    <span className="font-semibold text-navy-950 block">Require Online Scratch-Card PIN Verification for O&apos;Level</span>
+                    <span className="text-slate-500 text-[11px]">
+                      Mandates WAEC / NECO / NABTEB result scratch card details for automatic digital screening before admission offer issuance.
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </form>
         </div>
       )}
 

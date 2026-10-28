@@ -149,6 +149,15 @@ export function Navbar({ onOpenRoleModal, onOpenInstModal, onOpenVerifyModal, on
           <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Mobile Switcher Shortcuts */}
             <div className="flex md:hidden items-center space-x-1">
+              {onOpenVerifyModal && (
+                <button
+                  onClick={onOpenVerifyModal}
+                  className="p-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+                  title="Verify Access Code"
+                >
+                  <KeyRound className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={onOpenInstModal}
                 className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"

@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 
 export function AuditView() {
-  const { auditEvents } = useDemoStore();
+  const { auditEvents, institutions } = useDemoStore();
 
   const [search, setSearch] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState("all");
+  const [institutionFilter, setInstitutionFilter] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 
   const filteredEvents = auditEvents.filter((e) => {
@@ -30,8 +31,11 @@ export function AuditView() {
       e.reason.toLowerCase().includes(search.toLowerCase()) ||
       e.correlationId.toLowerCase().includes(search.toLowerCase());
     const matchesOutcome = outcomeFilter === "all" || e.outcome === outcomeFilter;
-    return matchesSearch && matchesOutcome;
+    const matchesInstitution = institutionFilter === "all" || e.institutionId === institutionFilter;
+    return matchesSearch && matchesOutcome && matchesInstitution;
   });
+
+  const warningOrFailureCount = auditEvents.filter((e) => e.outcome !== "Success").length;
 
   const exportAuditCSV = () => {
     const headers = ["Event ID", "Timestamp", "Actor", "Role", "Institution", "Action", "Outcome", "Reason", "Correlation ID"];
@@ -84,6 +88,43 @@ export function AuditView() {
         </button>
       </div>
 
+      {/* Security Integrity Status Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span>Tenant Isolation Integrity</span>
+            <Shield className="w-4 h-4 text-emerald-600" />
+          </div>
+          <p className="text-xl font-black text-navy-950 mt-1">100% Compliant</p>
+          <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+            <CheckCircle2 className="w-3 h-3" />
+            Logical row-level partitioning intact
+          </span>
+        </div>
+
+        <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span>Logged Events</span>
+            <History className="w-4 h-4 text-brand-600" />
+          </div>
+          <p className="text-xl font-black text-navy-950 mt-1">{auditEvents.length} Entries</p>
+          <span className="text-[11px] text-slate-500 mt-0.5 block">
+            Append-only demonstration store
+          </span>
+        </div>
+
+        <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span>Flagged Security Anomalies</span>
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+          </div>
+          <p className="text-xl font-black text-amber-600 mt-1">{warningOrFailureCount} Anomalies</p>
+          <span className="text-[11px] text-slate-500 mt-0.5 block">
+            Payment retries, score amendments
+          </span>
+        </div>
+      </div>
+
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -96,6 +137,19 @@ export function AuditView() {
             className="w-full pl-9 pr-4 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
           />
         </div>
+
+        <select
+          value={institutionFilter}
+          onChange={(e) => setInstitutionFilter(e.target.value)}
+          className="px-3 py-2 border rounded-xl text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <option value="all">All Institutions</option>
+          {institutions.map((inst) => (
+            <option key={inst.id} value={inst.id}>
+              {inst.shortName} ({inst.code})
+            </option>
+          ))}
+        </select>
 
         <select
           value={outcomeFilter}

@@ -65,29 +65,35 @@ export function SchoolAdminView() {
 
   const filteredStaff = staffMembers.filter(
     (s) =>
-      s.fullName.toLowerCase().includes(searchStaff.toLowerCase()) ||
+      (!s.institutionId || s.institutionId === currentInstitution.id) &&
+      (s.fullName.toLowerCase().includes(searchStaff.toLowerCase()) ||
       s.rank.toLowerCase().includes(searchStaff.toLowerCase()) ||
-      s.role.toLowerCase().includes(searchStaff.toLowerCase())
+      s.role.toLowerCase().includes(searchStaff.toLowerCase()))
   );
+
+  // Institution-scoped data
+  const instStudents = students.filter((s) => !s.institutionId || s.institutionId === currentInstitution.id);
+  const instApplicants = applicants.filter((a) => !a.institutionId || a.institutionId === currentInstitution.id);
+  const instInvoices = invoices.filter((i) => !i.institutionId || i.institutionId === currentInstitution.id);
 
   // Recharts data
   const enrollmentByLevel = [
-    { level: "100L", students: students.filter((s) => s.level === "100L").length + 18 },
-    { level: "200L", students: students.filter((s) => s.level === "200L").length + 22 },
-    { level: "300L", students: students.filter((s) => s.level === "300L").length + 26 },
-    { level: "400L", students: students.filter((s) => s.level === "400L").length + 19 },
+    { level: "100L", students: instStudents.filter((s) => s.level === "100L").length + 18 },
+    { level: "200L", students: instStudents.filter((s) => s.level === "200L").length + 22 },
+    { level: "300L", students: instStudents.filter((s) => s.level === "300L").length + 26 },
+    { level: "400L", students: instStudents.filter((s) => s.level === "400L").length + 19 },
     { level: "500L", students: 14 },
   ];
 
   const genderRatio = [
-    { name: "Male Students", value: students.filter((s) => s.gender === "Male").length + 55, color: "#2563eb" },
-    { name: "Female Students", value: students.filter((s) => s.gender === "Female").length + 48, color: "#ec4899" },
+    { name: "Male Students", value: instStudents.filter((s) => s.gender === "Male").length + 55, color: "#2563eb" },
+    { name: "Female Students", value: instStudents.filter((s) => s.gender === "Female").length + 48, color: "#ec4899" },
   ];
 
   const feeClearanceSummary = [
-    { name: "Fully Cleared", value: invoices.filter((i) => i.status === "Paid").length, color: "#10b981" },
-    { name: "Outstanding", value: invoices.filter((i) => i.status === "Unpaid").length, color: "#f59e0b" },
-    { name: "Reversed/Under Query", value: invoices.filter((i) => i.status === "Reversed").length + 1, color: "#ef4444" },
+    { name: "Fully Cleared", value: instInvoices.filter((i) => i.status === "Paid").length, color: "#10b981" },
+    { name: "Outstanding", value: instInvoices.filter((i) => i.status === "Unpaid").length, color: "#f59e0b" },
+    { name: "Reversed/Under Query", value: instInvoices.filter((i) => i.status === "Reversed").length + 1, color: "#ef4444" },
   ];
 
   const handleUpdateRole = () => {

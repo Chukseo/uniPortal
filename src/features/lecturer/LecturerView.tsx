@@ -37,8 +37,10 @@ export function LecturerView() {
   const [maxExam, setMaxExam] = useState(gradingPolicy.maxExamMarks || 70);
   const [showConfigModal, setShowConfigModal] = useState(false);
 
-  const selectedCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
-  const courseScores = scores.filter((s) => s.courseId === selectedCourseId);
+  const instCourses = courses.filter((c) => !c.institutionId || c.institutionId === currentUser.institutionId);
+  const availableCourses = instCourses.length > 0 ? instCourses : courses;
+  const selectedCourse = availableCourses.find((c) => c.id === selectedCourseId) || availableCourses[0];
+  const courseScores = scores.filter((s) => s.courseId === (selectedCourse?.id || selectedCourseId));
 
   const filteredScores = courseScores.filter((sc) =>
     sc.studentName.toLowerCase().includes(searchCandidate.toLowerCase()) ||

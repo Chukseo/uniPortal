@@ -42,6 +42,7 @@ export function SuperAdminView() {
     setCurrentInstitutionId,
     toggleInstitutionStatus,
     updateInstitution,
+    createInstitution,
     auditEvents,
     resetDemoData,
     setGuidedTourOpen,
@@ -49,10 +50,21 @@ export function SuperAdminView() {
 
   const [activeTab, setActiveTab] = useState<"overview" | "tenants" | "analytics" | "audit" | "config">("overview");
   const [selectedInstForEdit, setSelectedInstForEdit] = useState<Institution | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editName, setEditName] = useState("");
   const [editMotto, setEditMotto] = useState("");
   const [editCity, setEditCity] = useState("");
   const [editStatus, setEditStatus] = useState<"Active" | "Maintenance" | "Registration Closed">("Active");
+
+  // Onboarding new tenant form states
+  const [newInstName, setNewInstName] = useState("");
+  const [newInstShortName, setNewInstShortName] = useState("");
+  const [newInstCode, setNewInstCode] = useState("");
+  const [newInstType, setNewInstType] = useState<"University" | "Polytechnic" | "College of Education">("University");
+  const [newInstState, setNewInstState] = useState("Lagos State");
+  const [newInstCity, setNewInstCity] = useState("Lagos");
+  const [newInstMotto, setNewInstMotto] = useState("Excellence in Innovation");
+  const [newInstColor, setNewInstColor] = useState("#0f766e");
 
   // Multi-institution aggregate statistics
   const totalInstitutions = institutions.length;
@@ -93,6 +105,28 @@ export function SuperAdminView() {
       portalStatus: editStatus,
     });
     setSelectedInstForEdit(null);
+  };
+
+  const handleCreateTenant = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInstName || !newInstCode) return;
+    createInstitution({
+      name: newInstName,
+      shortName: newInstShortName || newInstName.split(" ")[0],
+      code: newInstCode.toUpperCase(),
+      type: newInstType,
+      state: newInstState,
+      city: newInstCity,
+      motto: newInstMotto,
+      accentColor: newInstColor,
+      currentSession: "2024/2025",
+      currentSemester: "First Semester",
+      portalStatus: "Active",
+    });
+    setShowCreateModal(false);
+    setNewInstName("");
+    setNewInstShortName("");
+    setNewInstCode("");
   };
 
   const exportAuditCSV = () => {
@@ -369,9 +403,18 @@ export function SuperAdminView() {
       {/* Tab: Tenants */}
       {activeTab === "tenants" && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <h3 className="font-bold text-sm text-navy-950">Managed Higher Education Institutions</h3>
-            <span className="text-xs text-slate-500">3 Fictional Seed Tenants Configured</span>
+          <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-sm text-navy-950">Managed Higher Education Institutions</h3>
+              <span className="text-xs text-slate-500">{institutions.length} Fictional Demo Tenants Configured</span>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-3.5 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 self-start sm:self-auto shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Onboard New Institution</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -632,6 +675,145 @@ export function SuperAdminView() {
             <div className="flex justify-end space-x-2 pt-2 border-t">
               <button type="button" onClick={() => setSelectedInstForEdit(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
               <button type="submit" className="px-4 py-1.5 text-xs font-bold bg-brand-700 text-white rounded-lg">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Onboard New Institution Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateTenant} className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b">
+              <div className="flex items-center space-x-2">
+                <span className="p-1.5 rounded-lg bg-brand-100 text-brand-800">
+                  <Building2 className="w-4 h-4" />
+                </span>
+                <h3 className="font-bold text-navy-950 text-sm">Onboard New Higher Institution (Demo Tenant)</h3>
+              </div>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div className="sm:col-span-2">
+                <label className="font-semibold text-slate-700 block mb-1">Institution Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newInstName}
+                  onChange={(e) => setNewInstName(e.target.value)}
+                  placeholder="e.g. Apex University of Technology"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Short Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newInstShortName}
+                  onChange={(e) => setNewInstShortName(e.target.value)}
+                  placeholder="e.g. Apex Tech"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Institutional Code *</label>
+                <input
+                  type="text"
+                  required
+                  value={newInstCode}
+                  onChange={(e) => setNewInstCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. AUT"
+                  className="w-full px-3 py-2 border rounded-xl font-mono uppercase focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Institution Category *</label>
+                <select
+                  value={newInstType}
+                  onChange={(e) => setNewInstType(e.target.value as any)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                >
+                  <option value="University">University (NUC)</option>
+                  <option value="Polytechnic">Polytechnic (NBTE)</option>
+                  <option value="College of Education">College of Education (NCCE)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">State *</label>
+                <input
+                  type="text"
+                  required
+                  value={newInstState}
+                  onChange={(e) => setNewInstState(e.target.value)}
+                  placeholder="e.g. Edo State"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">City / Campus *</label>
+                <input
+                  type="text"
+                  required
+                  value={newInstCity}
+                  onChange={(e) => setNewInstCity(e.target.value)}
+                  placeholder="e.g. Benin City"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Brand Accent Color</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="color"
+                    value={newInstColor}
+                    onChange={(e) => setNewInstColor(e.target.value)}
+                    className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={newInstColor}
+                    onChange={(e) => setNewInstColor(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl font-mono text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="font-semibold text-slate-700 block mb-1">Motto / Institutional Vision</label>
+                <input
+                  type="text"
+                  value={newInstMotto}
+                  onChange={(e) => setNewInstMotto(e.target.value)}
+                  placeholder="e.g. Knowledge, Integrity & Leadership"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-3 border-t">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-xs font-bold bg-brand-700 hover:bg-brand-800 text-white rounded-xl shadow-sm transition-all"
+              >
+                Provision Tenant
+              </button>
             </div>
           </form>
         </div>

@@ -44,14 +44,16 @@ export function FacultyOfficerView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
 
-  const faculty = faculties[0];
+  const instFaculties = faculties.filter((f) => !f.institutionId || f.institutionId === currentInstitution.id);
+  const faculty = instFaculties[0] || faculties[0];
   const facultyDepts = departments.filter((d) => d.facultyId === faculty?.id);
   const academicStaff = staffMembers.filter((s) => s.role === "lecturer");
 
   const filteredCourses = courses.filter((c) => {
+    const matchesInst = !c.institutionId || c.institutionId === currentInstitution.id;
     const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) || c.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLevel = levelFilter === "all" || c.level === levelFilter;
-    return matchesSearch && matchesLevel;
+    return matchesInst && matchesSearch && matchesLevel;
   });
 
   const handleAssignSubmit = (e: React.FormEvent) => {

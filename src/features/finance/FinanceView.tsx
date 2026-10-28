@@ -61,16 +61,17 @@ export function FinanceView() {
   const [statementStudentId, setStatementStudentId] = useState(students[0]?.id || "");
 
   const filteredInvoices = invoices.filter((inv) => {
+    const matchesInst = !inv.institutionId || inv.institutionId === currentInstitution.id;
     const matchesSearch =
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
       inv.targetName.toLowerCase().includes(search.toLowerCase()) ||
       inv.feeCategory.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || inv.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesInst && matchesSearch && matchesStatus;
   });
 
   const totalCollected = invoices
-    .filter((i) => i.status === "Paid")
+    .filter((i) => (!i.institutionId || i.institutionId === currentInstitution.id) && i.status === "Paid")
     .reduce((sum, i) => sum + i.amount, 0);
 
   const totalOutstanding = invoices

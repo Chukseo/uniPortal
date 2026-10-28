@@ -33,6 +33,12 @@ export function ReportsView() {
   >("enrollment");
   const [levelFilter, setLevelFilter] = useState("all");
 
+  // Institution-scoped data for multi-tenant isolation
+  const instStudents = students.filter((s) => !s.institutionId || s.institutionId === currentInstitution.id);
+  const instApplicants = applicants.filter((a) => !a.institutionId || a.institutionId === currentInstitution.id);
+  const instInvoices = invoices.filter((i) => !i.institutionId || i.institutionId === currentInstitution.id);
+  const instCourses = courses.filter((c) => !c.institutionId || c.institutionId === currentInstitution.id);
+
   const handlePrint = () => {
     window.print();
   };
@@ -44,7 +50,7 @@ export function ReportsView() {
 
     if (reportType === "enrollment") {
       headers = ["Matric Number", "Full Name", "Level", "CGPA", "Standing", "Status"];
-      rows = students.map((s) => [
+      rows = instStudents.map((s) => [
         s.matricNumber,
         `"${s.firstName} ${s.lastName}"`,
         s.level,
@@ -54,7 +60,7 @@ export function ReportsView() {
       ]);
     } else if (reportType === "admissions") {
       headers = ["Application Number", "Candidate Name", "UTME Score", "State", "Status"];
-      rows = applicants.map((a) => [
+      rows = instApplicants.map((a) => [
         a.applicationNumber,
         `"${a.firstName} ${a.lastName}"`,
         a.utmeScore || "N/A",
@@ -63,7 +69,7 @@ export function ReportsView() {
       ]);
     } else if (reportType === "fees") {
       headers = ["Invoice Number", "Target Name", "Fee Category", "Amount", "Status", "Due Date"];
-      rows = invoices.map((i) => [
+      rows = instInvoices.map((i) => [
         i.invoiceNumber,
         `"${i.targetName}"`,
         i.feeCategory,
@@ -73,7 +79,7 @@ export function ReportsView() {
       ]);
     } else if (reportType === "courses") {
       headers = ["Course Code", "Course Title", "Credit Units", "Type", "Lecturer"];
-      rows = courses.map((c) => [
+      rows = instCourses.map((c) => [
         c.code,
         `"${c.title}"`,
         c.creditUnits,
@@ -212,7 +218,7 @@ export function ReportsView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {students.map((s) => (
+                {instStudents.map((s) => (
                   <tr key={s.id}>
                     <td className="p-2.5 border font-mono font-bold text-brand-700">{s.matricNumber}</td>
                     <td className="p-2.5 border font-semibold">{s.firstName} {s.lastName} {s.otherNames}</td>
@@ -243,7 +249,7 @@ export function ReportsView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {applicants.map((a) => (
+                {instApplicants.map((a) => (
                   <tr key={a.id}>
                     <td className="p-2.5 border font-mono font-bold text-brand-700">{a.applicationNumber}</td>
                     <td className="p-2.5 border font-semibold">{a.firstName} {a.lastName}</td>
@@ -272,7 +278,7 @@ export function ReportsView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {invoices.map((i) => (
+                {instInvoices.map((i) => (
                   <tr key={i.id}>
                     <td className="p-2.5 border font-mono font-bold text-brand-700">{i.invoiceNumber}</td>
                     <td className="p-2.5 border font-semibold">{i.targetName}</td>
@@ -305,7 +311,7 @@ export function ReportsView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {courses.map((c) => (
+                {instCourses.map((c) => (
                   <tr key={c.id}>
                     <td className="p-2.5 border font-mono font-bold text-brand-700">{c.code}</td>
                     <td className="p-2.5 border font-semibold">{c.title}</td>
