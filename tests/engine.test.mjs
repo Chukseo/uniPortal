@@ -99,3 +99,27 @@ test("Matriculation number generator adheres to Nigerian university format", () 
   const matric = generateMatric("GUT", "CMP", 2024);
   assert.match(matric, /^GUT\/CMP\/24\/\d{4}$/);
 });
+
+test("Continuous Assessment (30) and Exam (70) score validation accurately sums to NUC grade", () => {
+  const validateAndScore = (ca, exam, maxCa = 30, maxExam = 70) => {
+    const clampedCa = Math.max(0, Math.min(maxCa, ca));
+    const clampedExam = Math.max(0, Math.min(maxExam, exam));
+    const total = clampedCa + clampedExam;
+    return { total, ...calculateGrade(total) };
+  };
+
+  const student1 = validateAndScore(28, 56); // 84 -> A (5 pts)
+  assert.equal(student1.total, 84);
+  assert.equal(student1.grade, "A");
+  assert.equal(student1.points, 5);
+
+  const student2 = validateAndScore(18, 44); // 62 -> B (4 pts)
+  assert.equal(student2.total, 62);
+  assert.equal(student2.grade, "B");
+  assert.equal(student2.points, 4);
+
+  // Clamping check for out-of-bounds input
+  const clamped = validateAndScore(45, 95); // clamped to 30 + 70 = 100 -> A
+  assert.equal(clamped.total, 100);
+  assert.equal(clamped.grade, "A");
+});

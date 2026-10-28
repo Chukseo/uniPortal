@@ -15,15 +15,17 @@ import {
   Menu,
   X,
   ExternalLink,
+  KeyRound,
 } from "lucide-react";
 
 interface NavbarProps {
   onOpenRoleModal: () => void;
   onOpenInstModal: () => void;
+  onOpenVerifyModal?: () => void;
   onToggleSidebar?: () => void;
 }
 
-export function Navbar({ onOpenRoleModal, onOpenInstModal, onToggleSidebar }: NavbarProps) {
+export function Navbar({ onOpenRoleModal, onOpenInstModal, onOpenVerifyModal, onToggleSidebar }: NavbarProps) {
   const {
     currentRole,
     currentInstitution,
@@ -129,6 +131,18 @@ export function Navbar({ onOpenRoleModal, onOpenInstModal, onToggleSidebar }: Na
                 Switch
               </span>
             </button>
+
+            {/* Access Code Verifier Button */}
+            {onOpenVerifyModal && (
+              <button
+                onClick={onOpenVerifyModal}
+                className="inline-flex items-center space-x-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 transition-all shadow-sm"
+                title="Verify Stage Access Code"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden lg:inline">Verify Access Code</span>
+              </button>
+            )}
           </div>
 
           {/* Right Controls */}

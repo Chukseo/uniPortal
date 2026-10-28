@@ -9,6 +9,7 @@ import { RoleSwitcherModal } from "@/components/layout/RoleSwitcherModal";
 import { InstitutionSwitcherModal } from "@/components/layout/InstitutionSwitcherModal";
 import { GuidedTourModal } from "@/components/layout/GuidedTourModal";
 import { DocumentModal } from "@/features/documents/DocumentModal";
+import { AccessCodeVerifierModal } from "@/features/access-codes/AccessCodeVerifierModal";
 
 import { SuperAdminView } from "@/features/super-admin/SuperAdminView";
 import { SchoolAdminView } from "@/features/school-admin/SchoolAdminView";
@@ -41,6 +42,7 @@ export default function DemoPortalPage() {
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [instModalOpen, setInstModalOpen] = useState(false);
   const [docModalOpen, setDocModalOpen] = useState(false);
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const [docType, setDocType] = useState("offer_letter");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -98,6 +100,7 @@ export default function DemoPortalPage() {
       <Navbar
         onOpenRoleModal={() => setRoleModalOpen(true)}
         onOpenInstModal={() => setInstModalOpen(true)}
+        onOpenVerifyModal={() => setVerifyModalOpen(true)}
         onToggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
       />
 
@@ -159,6 +162,11 @@ export default function DemoPortalPage() {
         isOpen={docModalOpen}
         docType={docType}
         onClose={() => setDocModalOpen(false)}
+      />
+
+      <AccessCodeVerifierModal
+        isOpen={verifyModalOpen}
+        onClose={() => setVerifyModalOpen(false)}
       />
     </div>
   );
