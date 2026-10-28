@@ -38,11 +38,30 @@ This repository is an **interactive frontend-only demonstration application (MVP
    - Versioned result amendment tracking preserving version numbers, reasons, actor identities, and timestamps.
    - GPA & CGPA calculation adhering to Nigerian University Commission (NUC) 5-point benchmark scales.
 
-7. **Print-Ready Document Generator**
-   - Watermarked demonstration copy generator for Admission Offer Letters, Tuition Payment Receipts, Semester Course Registration Slips, and Unofficial Academic Transcripts.
+7. **Print-Ready Document Generator (6 Official Slips)**
+   - Watermarked demonstration copy generator for:
+     1. Provisional Admission Offer Letter
+     2. Official Bursary Tuition Payment Receipt
+     3. Semester Course Registration Slip (Form 01)
+     4. Unofficial Academic Transcript (NUC 5.0 CGPA)
+     5. Examination Docket & Candidate Entry Pass
+     6. Convocation Degree Certificate
+   - Available directly from the sidebar or modal triggers with single-click browser print support.
 
-8. **Chronological Audit Trail & Compliance Ledger**
+8. **Institutional Reports & Senate Extracts Suite**
+   - 6 standardized institutional reports: Student Enrollment Register, Admissions Digest, Bursary Fee Collections, Curricula & Teaching Allocations, Senate Examination Returns, and Graduation Clearance List.
+   - Client-side CSV file download and formatted print previews with institutional letterhead.
+
+9. **20-Stage Interactive Guided Sales Presentation Tour**
+   - Built-in interactive walkthrough taking presenters and prospective clients through the full lifecycle: tenant onboarding, curriculum setup, candidate screening, fee settlement, matriculation assignment, course registration, lecturer grading, Senate approval, transcript issuance, and convocation clearance.
+
+10. **Chronological Audit Trail & Compliance Ledger**
    - Live audit logging recording Actor, Role, Institution, Action, Outcome, and Correlation IDs with CSV export.
+   - Real-time tenant isolation monitoring and security anomaly alerts (failed payment threshold alerts, score modifications without Senate minuting).
+
+11. **Universal Access Code Verification Tool**
+   - One-click validator accessible from desktop and mobile navigation.
+   - Verifies code validity, stage entitlement resolution,holder details, and expiration status with test credentials provided.
 
 ---
 
