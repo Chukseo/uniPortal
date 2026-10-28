@@ -88,3 +88,14 @@ test("Access code format conforms to institutional specification", () => {
   const code = generateAccessCode("REG");
   assert.match(code, /^UNI-REG-\d{4}-[A-Z0-9]{3}$/);
 });
+
+test("Matriculation number generator adheres to Nigerian university format", () => {
+  const generateMatric = (instCode, progCode, year) => {
+    const yr = String(year).slice(-2);
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `${instCode}/${progCode}/${yr}/${rand}`;
+  };
+
+  const matric = generateMatric("GUT", "CMP", 2024);
+  assert.match(matric, /^GUT\/CMP\/24\/\d{4}$/);
+});

@@ -86,12 +86,16 @@ interface DemoState {
   staffMembers: StaffMember[];
   guidedTourOpen: boolean;
   guidedTourStep: number;
+  activeStudentId?: string | null;
+  activeApplicantId?: string | null;
 }
 
 interface DemoContextType extends DemoState {
   // Navigation & context
   setCurrentRole: (role: UserRole) => void;
   setCurrentInstitutionId: (id: string) => void;
+  setActiveStudentId: (id: string | null) => void;
+  setActiveApplicantId: (id: string | null) => void;
   currentInstitution: Institution;
   currentUser: User;
   currentStudent: Student | undefined;
@@ -118,6 +122,7 @@ interface DemoContextType extends DemoState {
   updateApplicationStatus: (id: string, status: ApplicationStatus, note?: string) => void;
   issueAdmissionOffer: (applicantId: string) => void;
   acceptAdmissionOffer: (applicantId: string) => void;
+  convertApplicantToStudent: (applicantId: string) => string;
 
   // Finance & payment simulation
   simulatePayment: (invoiceId: string, channel?: string) => { success: boolean; message: string };
@@ -200,6 +205,8 @@ const initialDefaultState: DemoState = {
   staffMembers: SEED_STAFF_MEMBERS,
   guidedTourOpen: false,
   guidedTourStep: 0,
+  activeStudentId: null,
+  activeApplicantId: null,
 };
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
@@ -245,6 +252,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       ...initialDefaultState,
       currentRole: state.currentRole,
       currentInstitutionId: "inst-1",
+      activeStudentId: null,
+      activeApplicantId: null,
     });
     logAuditEvent(
       "Demo Data Reset",
@@ -262,7 +271,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   const setCurrentInstitutionId = (id: string) => {
     const inst = state.institutions.find((i) => i.id === id);
-    setState((prev) => ({ ...prev, currentInstitutionId: id }));
+    setState((prev) => ({
+      ...prev,
+      currentInstitutionId: id,
+      activeStudentId: null,
+      activeApplicantId: null,
+    }));
     logAuditEvent(
       "Institution Context Switch",
       "Institution",
@@ -270,6 +284,14 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       "Success",
       `Switched multi-tenant active context to ${inst?.name || id}`
     );
+  };
+
+  const setActiveStudentId = (id: string | null) => {
+    setState((prev) => ({ ...prev, activeStudentId: id }));
+  };
+
+  const setActiveApplicantId = (id: string | null) => {
+    setState((prev) => ({ ...prev, activeApplicantId: id }));
   };
 
   const currentInstitution =
@@ -282,13 +304,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     state.users.find((u) => u.role === state.currentRole) ||
     state.users[0];
 
-  const currentStudent = state.students.find(
-    (s) => s.institutionId === state.currentInstitutionId
-  );
+  const currentStudent =
+    (state.activeStudentId
+      ? state.students.find((s) => s.id === state.activeStudentId)
+      : null) ||
+    state.students.find((s) => s.institutionId === state.currentInstitutionId) ||
+    state.students[0];
 
-  const currentApplicant = state.applicants.find(
-    (a) => a.institutionId === state.currentInstitutionId
-  );
+  const currentApplicant =
+    (state.activeApplicantId
+      ? state.applicants.find((a) => a.id === state.activeApplicantId)
+      : null) ||
+    state.applicants.find((a) => a.institutionId === state.currentInstitutionId) ||
+    state.applicants[0];
 
   const logAuditEvent = (
     action: string,
@@ -588,6 +616,102 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     logAuditEvent("Offer Accepted", "Applicant", applicantId, "Success", "Applicant accepted provisional offer.");
   };
 
+  const convertApplicantToStudent = (applicantId: string): string => {
+    const applicant = state.applicants.find((a) => a.id === applicantId);
+    if (!applicant) return "";
+
+    const existingStudent = state.students.find((s) => s.applicantId === applicantId);
+    if (existingStudent) {
+      setState((prev) => ({ ...prev, activeStudentId: existingStudent.id }));
+      return existingStudent.id;
+    }
+
+    const yearSuffix = new Date().getFullYear().toString().substring(2);
+    const matricNum = `${currentInstitution.code}/CMP/${yearSuffix}/${Math.floor(1000 + Math.random() * 9000)}`;
+    const studentId = `std-new-${Date.now()}`;
+
+    const nextStageCode = createAccessCodeCredential({
+      institutionId: applicant.institutionId,
+      targetId: applicant.id,
+      targetType: "student",
+      stage: "student_activated",
+      purpose: "Matriculation confirmation and student portal access code",
+    });
+
+    const newStudentObj: Student = {
+      id: studentId,
+      institutionId: applicant.institutionId,
+      applicantId: applicant.id,
+      matricNumber: matricNum,
+      firstName: applicant.firstName,
+      lastName: applicant.lastName,
+      otherNames: applicant.otherNames,
+      email: `${applicant.firstName.toLowerCase()}.${applicant.lastName.toLowerCase()}@student.${currentInstitution.shortName.toLowerCase().replace(/\s+/g, "")}.edu.ng`,
+      phone: applicant.phone,
+      gender: applicant.gender,
+      facultyId: "fac-1",
+      departmentId: "dept-1",
+      programmeId: applicant.programmeId,
+      level: "100L",
+      currentSession: "2024/2025",
+      currentSemester: "First Semester",
+      enrollmentStatus: "Enrolled",
+      cgpa: 0,
+      totalCreditsEarned: 0,
+      academicStanding: "First Class",
+      currentAccessCode: nextStageCode.code,
+      isAccountActivated: true,
+      isCourseRegistered: false,
+      stateOfOrigin: applicant.stateOfOrigin,
+    };
+
+    const tuitionInvoice: Invoice = {
+      id: `inv-sch-${Date.now()}`,
+      institutionId: applicant.institutionId,
+      invoiceNumber: `INV-${new Date().getFullYear()}-SCH-${Math.floor(1000 + Math.random() * 9000)}`,
+      targetId: newStudentObj.id,
+      targetName: `${applicant.firstName} ${applicant.lastName}`,
+      targetEmail: newStudentObj.email,
+      targetType: "student",
+      feeCategory: "School Fees",
+      description: "100L First Semester Tuition & ICT Services",
+      amount: 220000,
+      academicSession: "2024/2025",
+      dueDate: "2025-03-15",
+      status: "Unpaid",
+      createdAt: new Date().toISOString(),
+    };
+
+    setState((prev) => ({
+      ...prev,
+      students: [newStudentObj, ...prev.students],
+      invoices: [tuitionInvoice, ...prev.invoices],
+      accessCodes: [nextStageCode, ...prev.accessCodes],
+      activeStudentId: studentId,
+      applicants: prev.applicants.map((a) =>
+        a.id === applicantId
+          ? {
+              ...a,
+              status: "Offer Accepted",
+              isOfferAccepted: true,
+              matricNumber: matricNum,
+              convertedStudentId: studentId,
+            }
+          : a
+      ),
+    }));
+
+    logAuditEvent(
+      "Applicant Converted to Student",
+      "Student",
+      studentId,
+      "Success",
+      `Matriculated applicant ${applicant.firstName} ${applicant.lastName} as ${matricNum}`
+    );
+
+    return studentId;
+  };
+
   // Payments & Finance Simulation
   const simulatePayment = (invoiceId: string, channel = "Simulated Campus Pay") => {
     const invoice = state.invoices.find((i) => i.id === invoiceId);
@@ -716,6 +840,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       const updatedCodes = nextStageCode ? [nextStageCode, ...prev.accessCodes] : prev.accessCodes;
       const updatedStudents = newStudentObj ? [newStudentObj, ...prev.students] : prev.students;
       const finalInvoices = tuitionInvoice ? [tuitionInvoice, ...updatedInvoices] : updatedInvoices;
+      const updatedApplicants = newStudentObj
+        ? prev.applicants.map((a) =>
+            a.id === invoice.targetId
+              ? {
+                  ...a,
+                  status: "Offer Accepted" as const,
+                  isOfferAccepted: true,
+                  matricNumber: newStudentObj?.matricNumber,
+                  convertedStudentId: newStudentObj?.id,
+                }
+              : a
+          )
+        : prev.applicants;
 
       return {
         ...prev,
@@ -724,6 +861,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         entitlements: updatedEntitlements,
         accessCodes: updatedCodes,
         students: updatedStudents,
+        applicants: updatedApplicants,
+        activeStudentId: newStudentObj ? newStudentObj.id : prev.activeStudentId,
         notifications: [
           {
             id: `notif-${Date.now()}`,
@@ -1209,6 +1348,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         setGuidedTourStep,
         nextTourStep,
         prevTourStep,
+        setActiveStudentId,
+        setActiveApplicantId,
         createInstitution,
         updateInstitution,
         toggleInstitutionStatus,
@@ -1220,6 +1361,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         updateApplicationStatus,
         issueAdmissionOffer,
         acceptAdmissionOffer,
+        convertApplicantToStudent,
         simulatePayment,
         simulateFailedPayment,
         simulateRefundReversal,

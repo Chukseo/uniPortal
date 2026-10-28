@@ -143,6 +143,8 @@ export interface Applicant {
   decisionTimestamp?: string;
   acceptanceFeeInvoiceId?: string;
   isOfferAccepted?: boolean;
+  matricNumber?: string;
+  convertedStudentId?: string;
 }
 
 export type StageEntitlementKey =
