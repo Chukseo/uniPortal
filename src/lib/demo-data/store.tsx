@@ -24,6 +24,11 @@ import {
   UserRole,
   StageEntitlementKey,
   ApplicationStatus,
+  ExaminationScheduleItem,
+  GraduationCandidate,
+  DefermentRequest,
+  StaffMember,
+  FeeCategory,
 } from "@/types";
 import {
   SEED_INSTITUTIONS,
@@ -45,6 +50,10 @@ import {
   SEED_ANNOUNCEMENTS,
   SEED_AUDIT_EVENTS,
   SEED_GRADING_POLICY,
+  SEED_EXAM_SCHEDULES,
+  SEED_GRADUATION_CANDIDATES,
+  SEED_DEFERMENT_REQUESTS,
+  SEED_STAFF_MEMBERS,
 } from "./seed";
 import { createAccessCodeCredential } from "../demo-engine/access-code";
 import { calculateGrade } from "../demo-engine/gpa";
@@ -71,6 +80,10 @@ interface DemoState {
   announcements: Announcement[];
   auditEvents: AuditEvent[];
   gradingPolicy: GradingPolicy;
+  examSchedules: ExaminationScheduleItem[];
+  graduationCandidates: GraduationCandidate[];
+  defermentRequests: DefermentRequest[];
+  staffMembers: StaffMember[];
   guidedTourOpen: boolean;
   guidedTourStep: number;
 }
@@ -110,6 +123,26 @@ interface DemoContextType extends DemoState {
   simulatePayment: (invoiceId: string, channel?: string) => { success: boolean; message: string };
   simulateFailedPayment: (invoiceId: string) => void;
   simulateRefundReversal: (invoiceId: string, reason: string) => void;
+  createCustomInvoice: (params: { targetId: string; targetName: string; targetEmail: string; targetType: "student" | "applicant"; feeCategory: FeeCategory; description: string; amount: number; dueDate: string }) => void;
+
+  // Student directory & Senate status
+  updateStudentStatus: (studentId: string, status: "Enrolled" | "Deferred" | "Withdrawn" | "Graduated") => void;
+  assignMatriculationNumber: (studentId: string, newMatric: string) => void;
+
+  // Deferments & Graduation
+  approveDeferment: (id: string, note?: string) => void;
+  rejectDeferment: (id: string, note?: string) => void;
+  toggleGraduationClearance: (candidateId: string, field: "libraryClearance" | "bursaryClearance" | "departmentClearance" | "senateApproval") => void;
+
+  // Staff & Faculty assignments
+  addStaffMember: (staff: Omit<StaffMember, "id">) => void;
+  updateStaffRole: (staffId: string, newRole: UserRole, departmentId?: string) => void;
+  assignLecturerToCourse: (courseId: string, lecturerId: string, lecturerName: string) => void;
+
+  // Examination schedule & Grading Policy
+  addExamSchedule: (item: Omit<ExaminationScheduleItem, "id">) => void;
+  deleteExamSchedule: (id: string) => void;
+  updateGradingPolicy: (policy: Partial<GradingPolicy>) => void;
 
   // Access codes & progression
   issueAccessCode: (targetId: string, targetType: "applicant" | "student", stage: StageEntitlementKey, purpose: string) => string;
@@ -161,6 +194,10 @@ const initialDefaultState: DemoState = {
   announcements: SEED_ANNOUNCEMENTS,
   auditEvents: SEED_AUDIT_EVENTS,
   gradingPolicy: SEED_GRADING_POLICY,
+  examSchedules: SEED_EXAM_SCHEDULES,
+  graduationCandidates: SEED_GRADUATION_CANDIDATES,
+  defermentRequests: SEED_DEFERMENT_REQUESTS,
+  staffMembers: SEED_STAFF_MEMBERS,
   guidedTourOpen: false,
   guidedTourStep: 0,
 };
@@ -1024,6 +1061,139 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const createCustomInvoice = (params: {
+    targetId: string;
+    targetName: string;
+    targetEmail: string;
+    targetType: "student" | "applicant";
+    feeCategory: FeeCategory;
+    description: string;
+    amount: number;
+    dueDate: string;
+  }) => {
+    const newInv: Invoice = {
+      id: `inv-custom-${Date.now()}`,
+      institutionId: state.currentInstitutionId,
+      invoiceNumber: `INV-${new Date().getFullYear()}-${params.feeCategory.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      targetId: params.targetId,
+      targetName: params.targetName,
+      targetEmail: params.targetEmail,
+      targetType: params.targetType,
+      feeCategory: params.feeCategory,
+      description: params.description,
+      amount: params.amount,
+      academicSession: currentInstitution.currentSession,
+      dueDate: params.dueDate,
+      status: "Unpaid",
+      createdAt: new Date().toISOString(),
+    };
+    setState((prev) => ({ ...prev, invoices: [newInv, ...prev.invoices] }));
+    logAuditEvent("Invoice Generated", "Invoice", newInv.id, "Success", `Generated ${params.feeCategory} invoice for ${params.targetName}`);
+  };
+
+  const updateStudentStatus = (studentId: string, status: "Enrolled" | "Deferred" | "Withdrawn" | "Graduated") => {
+    setState((prev) => ({
+      ...prev,
+      students: prev.students.map((s) => (s.id === studentId ? { ...s, enrollmentStatus: status } : s)),
+    }));
+    logAuditEvent("Student Status Updated", "Student", studentId, "Warning", `Updated enrollment standing to ${status}`);
+  };
+
+  const assignMatriculationNumber = (studentId: string, newMatric: string) => {
+    setState((prev) => ({
+      ...prev,
+      students: prev.students.map((s) => (s.id === studentId ? { ...s, matricNumber: newMatric } : s)),
+    }));
+    logAuditEvent("Matriculation Number Assigned", "Student", studentId, "Success", `Registry assigned ${newMatric}`);
+  };
+
+  const approveDeferment = (id: string, note?: string) => {
+    setState((prev) => ({
+      ...prev,
+      defermentRequests: prev.defermentRequests.map((d) =>
+        d.id === id ? { ...d, status: "Approved", decisionNote: note || "Approved by Senate Board" } : d
+      ),
+    }));
+    logAuditEvent("Deferment Approved", "DefermentRequest", id, "Success", "Senate approved academic session deferment.");
+  };
+
+  const rejectDeferment = (id: string, note?: string) => {
+    setState((prev) => ({
+      ...prev,
+      defermentRequests: prev.defermentRequests.map((d) =>
+        d.id === id ? { ...d, status: "Declined", decisionNote: note || "Declined by Senate Board" } : d
+      ),
+    }));
+    logAuditEvent("Deferment Declined", "DefermentRequest", id, "Warning", "Senate declined deferment request.");
+  };
+
+  const toggleGraduationClearance = (
+    candidateId: string,
+    field: "libraryClearance" | "bursaryClearance" | "departmentClearance" | "senateApproval"
+  ) => {
+    setState((prev) => ({
+      ...prev,
+      graduationCandidates: prev.graduationCandidates.map((c) =>
+        c.id === candidateId ? { ...c, [field]: !c[field] } : c
+      ),
+    }));
+    logAuditEvent("Graduation Clearance Updated", "GraduationCandidate", candidateId, "Success", `Toggled ${field}`);
+  };
+
+  const addStaffMember = (staff: Omit<StaffMember, "id">) => {
+    const newStaff: StaffMember = {
+      ...staff,
+      id: `stf-${Date.now()}`,
+    };
+    setState((prev) => ({ ...prev, staffMembers: [newStaff, ...prev.staffMembers] }));
+    logAuditEvent("Staff Appointed", "StaffMember", newStaff.id, "Success", `Onboarded ${newStaff.fullName} (${newStaff.rank})`);
+  };
+
+  const updateStaffRole = (staffId: string, newRole: UserRole, departmentId?: string) => {
+    setState((prev) => ({
+      ...prev,
+      staffMembers: prev.staffMembers.map((s) =>
+        s.id === staffId ? { ...s, role: newRole, departmentId: departmentId || s.departmentId } : s
+      ),
+    }));
+    logAuditEvent("Staff Role Updated", "StaffMember", staffId, "Warning", `Reassigned role to ${newRole}`);
+  };
+
+  const assignLecturerToCourse = (courseId: string, lecturerId: string, lecturerName: string) => {
+    setState((prev) => ({
+      ...prev,
+      courses: prev.courses.map((c) =>
+        c.id === courseId ? { ...c, lecturerId, lecturerName } : c
+      ),
+    }));
+    logAuditEvent("Course Assigned", "Course", courseId, "Success", `Allocated teaching lead: ${lecturerName}`);
+  };
+
+  const addExamSchedule = (item: Omit<ExaminationScheduleItem, "id">) => {
+    const newExm: ExaminationScheduleItem = {
+      ...item,
+      id: `exm-${Date.now()}`,
+    };
+    setState((prev) => ({ ...prev, examSchedules: [newExm, ...prev.examSchedules] }));
+    logAuditEvent("Exam Timetable Scheduled", "ExaminationScheduleItem", newExm.id, "Success", `Scheduled ${newExm.courseCode} on ${newExm.date}`);
+  };
+
+  const deleteExamSchedule = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      examSchedules: prev.examSchedules.filter((e) => e.id !== id),
+    }));
+    logAuditEvent("Exam Timetable Item Removed", "ExaminationScheduleItem", id, "Warning", "Removed from schedule.");
+  };
+
+  const updateGradingPolicy = (policy: Partial<GradingPolicy>) => {
+    setState((prev) => ({
+      ...prev,
+      gradingPolicy: { ...prev.gradingPolicy, ...policy },
+    }));
+    logAuditEvent("Grading Policy Updated", "GradingPolicy", "POLICY", "Warning", "Modified Senate score boundary rules.");
+  };
+
   return (
     <DemoContext.Provider
       value={{
@@ -1068,6 +1238,18 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         markNotificationAsRead,
         markAllNotificationsAsRead,
         logAuditEvent,
+        createCustomInvoice,
+        updateStudentStatus,
+        assignMatriculationNumber,
+        approveDeferment,
+        rejectDeferment,
+        toggleGraduationClearance,
+        addStaffMember,
+        updateStaffRole,
+        assignLecturerToCourse,
+        addExamSchedule,
+        deleteExamSchedule,
+        updateGradingPolicy,
       }}
     >
       {children}

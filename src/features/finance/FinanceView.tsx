@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useDemoStore } from "@/lib/demo-data/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Invoice, PaymentTransaction } from "@/types";
+import { Invoice, PaymentTransaction, FeeCategory } from "@/types";
 import {
   CreditCard,
   Banknote,
@@ -15,24 +15,50 @@ import {
   RotateCcw,
   Sparkles,
   FileSpreadsheet,
+  Plus,
   X,
+  FileText,
+  TrendingUp,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from "recharts";
 
 export function FinanceView() {
   const {
     invoices,
     payments,
+    students,
     simulatePayment,
     simulateFailedPayment,
     simulateRefundReversal,
+    createCustomInvoice,
     currentInstitution,
   } = useDemoStore();
 
-  const [activeTab, setActiveTab] = useState<"invoices" | "transactions">("invoices");
+  const [activeTab, setActiveTab] = useState<"invoices" | "transactions" | "trends" | "statement">("invoices");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [reversalReason, setReversalReason] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // New Invoice form state
+  const [invTargetStudentId, setInvTargetStudentId] = useState(students[0]?.id || "");
+  const [invCategory, setInvCategory] = useState<FeeCategory>("School Fees");
+  const [invDescription, setInvDescription] = useState("Second Semester Statutory Tuition Levy");
+  const [invAmount, setInvAmount] = useState(180000);
+  const [invDueDate, setInvDueDate] = useState("2025-04-30");
+
+  const [statementStudentId, setStatementStudentId] = useState(students[0]?.id || "");
 
   const filteredInvoices = invoices.filter((inv) => {
     const matchesSearch =
@@ -51,6 +77,15 @@ export function FinanceView() {
     .filter((i) => i.status === "Unpaid")
     .reduce((sum, i) => sum + i.amount, 0);
 
+  // Simulated Monthly Revenue data for Recharts
+  const monthlyRevenueData = [
+    { month: "Oct 2024", collections: 420000000, target: 400000000 },
+    { month: "Nov 2024", collections: 380000000, target: 350000000 },
+    { month: "Dec 2024", collections: 290000000, target: 300000000 },
+    { month: "Jan 2025", collections: 460000000, target: 420000000 },
+    { month: "Feb 2025", collections: 295000000, target: 310000000 },
+  ];
+
   const handleSimulateSuccess = (invId: string) => {
     simulatePayment(invId);
     setSelectedInvoice(null);
@@ -67,6 +102,25 @@ export function FinanceView() {
     setReversalReason("");
     setSelectedInvoice(null);
   };
+
+  const handleCreateInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+    const st = students.find((s) => s.id === invTargetStudentId) || students[0];
+    createCustomInvoice({
+      targetId: st.id,
+      targetName: `${st.firstName} ${st.lastName}`,
+      targetEmail: st.email,
+      targetType: "student",
+      feeCategory: invCategory,
+      description: invDescription,
+      amount: invAmount,
+      dueDate: invDueDate,
+    });
+    setShowCreateModal(false);
+  };
+
+  const selectedStudentForStatement = students.find((s) => s.id === statementStudentId) || students[0];
+  const statementInvoices = invoices.filter((i) => i.targetId === selectedStudentForStatement?.id);
 
   return (
     <div className="space-y-6">
@@ -87,9 +141,13 @@ export function FinanceView() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200">
-            Simulated Sandbox Mode (No Real Money)
-          </span>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-3.5 py-2 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-1"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Generate Custom Invoice</span>
+          </button>
         </div>
       </div>
 
@@ -113,10 +171,10 @@ export function FinanceView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200">
+      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab("invoices")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "invoices"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -126,13 +184,33 @@ export function FinanceView() {
         </button>
         <button
           onClick={() => setActiveTab("transactions")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "transactions"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           Payment Transactions ({payments.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("trends")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "trends"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Collection Analytics & Trends
+        </button>
+        <button
+          onClick={() => setActiveTab("statement")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "statement"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Student Account Statement
         </button>
       </div>
 
@@ -276,6 +354,177 @@ export function FinanceView() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Tab: Trends */}
+      {activeTab === "trends" && (
+        <div className="space-y-6">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-sm text-navy-950 mb-1">Monthly Tuition Collection Trajectory</h3>
+            <p className="text-xs text-slate-500 mb-4">Actual collections vs Projected Bursary targets (in NGN)</p>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyRevenueData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(val) => `₦${(val / 1000000).toFixed(0)}M`}
+                  />
+                  <Tooltip formatter={(val: any) => formatCurrency(Number(val))} />
+                  <Area type="monotone" dataKey="collections" stroke="#10b981" fill="#10b981" fillOpacity={0.15} />
+                  <Area type="monotone" dataKey="target" stroke="#94a3b8" strokeDasharray="4 4" fill="transparent" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Statement */}
+      {activeTab === "statement" && (
+        <div className="space-y-4">
+          <div className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-sm text-navy-950">Select Student Account</h3>
+              <p className="text-xs text-slate-500">Generate real-time student ledger statement</p>
+            </div>
+            <select
+              value={statementStudentId}
+              onChange={(e) => setStatementStudentId(e.target.value)}
+              className="px-3 py-2 border rounded-xl text-xs bg-white text-slate-800"
+            >
+              {students.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.matricNumber} — {st.firstName} {st.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div className="flex justify-between items-start border-b pb-4">
+              <div>
+                <h4 className="font-bold text-base text-navy-950">
+                  {selectedStudentForStatement.firstName} {selectedStudentForStatement.lastName}
+                </h4>
+                <p className="font-mono text-xs text-brand-700 font-bold">{selectedStudentForStatement.matricNumber}</p>
+                <p className="text-xs text-slate-500">{selectedStudentForStatement.email}</p>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-slate-400 block">Total Ledger Obligations</span>
+                <span className="font-mono text-xl font-black text-navy-950">
+                  {formatCurrency(statementInvoices.reduce((sum, i) => sum + i.amount, 0))}
+                </span>
+              </div>
+            </div>
+
+            <table className="w-full text-left text-xs border border-slate-200">
+              <thead className="bg-slate-50 border-b">
+                <tr>
+                  <th className="p-2.5 border">Invoice #</th>
+                  <th className="p-2.5 border">Fee Item</th>
+                  <th className="p-2.5 border text-right">Amount (NGN)</th>
+                  <th className="p-2.5 border">Status</th>
+                  <th className="p-2.5 border">Reference</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {statementInvoices.map((inv) => (
+                  <tr key={inv.id}>
+                    <td className="p-2.5 border font-mono font-bold text-brand-700">{inv.invoiceNumber}</td>
+                    <td className="p-2.5 border">{inv.feeCategory} - {inv.description}</td>
+                    <td className="p-2.5 border text-right font-mono font-bold">{inv.amount.toLocaleString()}</td>
+                    <td className="p-2.5 border font-semibold text-emerald-700">{inv.status}</td>
+                    <td className="p-2.5 border font-mono text-[11px] text-slate-500">{inv.paymentReference || "Pending"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Custom Invoice Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateInvoice} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b">
+              <h3 className="font-bold text-navy-950 text-sm">Issue Custom Student Fee Invoice</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="text-xs space-y-3">
+              <div>
+                <label className="font-semibold block mb-1">Target Student *</label>
+                <select
+                  value={invTargetStudentId}
+                  onChange={(e) => setInvTargetStudentId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white"
+                >
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.matricNumber} — {s.firstName} {s.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Fee Category *</label>
+                <select
+                  value={invCategory}
+                  onChange={(e) => setInvCategory(e.target.value as any)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white"
+                >
+                  <option value="School Fees">School Fees / Tuition</option>
+                  <option value="Departmental Charges">Departmental Laboratory Levy</option>
+                  <option value="Examination Fee">Examination & CBT Center Levy</option>
+                  <option value="Hostel Accommodation">Hostel Accommodation</option>
+                  <option value="Transcript Fee">Transcript Request Charge</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Invoice Narrative *</label>
+                <input
+                  type="text"
+                  required
+                  value={invDescription}
+                  onChange={(e) => setInvDescription(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold block mb-1">Amount (NGN) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={1000}
+                    value={invAmount}
+                    onChange={(e) => setInvAmount(parseInt(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-xl font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={invDueDate}
+                    onChange={(e) => setInvDueDate(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2 border-t">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
+              <button type="submit" className="px-4 py-1.5 text-xs font-bold bg-brand-700 text-white rounded-lg">Issue Invoice</button>
+            </div>
+          </form>
         </div>
       )}
 

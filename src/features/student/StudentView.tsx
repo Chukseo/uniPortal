@@ -15,7 +15,19 @@ import {
   FileText,
   Copy,
   ChevronRight,
+  Calendar,
+  Building,
+  TrendingUp,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export function StudentView() {
   const {
@@ -25,13 +37,14 @@ export function StudentView() {
     courses,
     registrations,
     scores,
+    examSchedules,
     entitlements,
     accessCodes,
     simulatePayment,
     submitCourseRegistration,
   } = useDemoStore();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "payments" | "courses" | "results">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "payments" | "courses" | "results" | "exams">("overview");
   const [selectedCourses, setSelectedCourses] = useState<string[]>([
     "crs-1",
     "crs-2",
@@ -61,6 +74,15 @@ export function StudentView() {
   const studentInvoices = invoices.filter((i) => i.targetId === student.id);
   const studentScores = scores.filter((s) => s.studentId === student.id);
   const studentReg = registrations.find((r) => r.studentId === student.id);
+
+  // CGPA historical semester trajectory for Recharts
+  const cgpaHistory = [
+    { semester: "100L 1st", cgpa: 4.45, gpa: 4.45 },
+    { semester: "100L 2nd", cgpa: 4.52, gpa: 4.60 },
+    { semester: "200L 1st", cgpa: 4.58, gpa: 4.68 },
+    { semester: "200L 2nd", cgpa: 4.60, gpa: 4.64 },
+    { semester: "300L 1st (Current)", cgpa: 4.62, gpa: 4.70 },
+  ];
 
   // Check which courses are selected & total credits
   const selectedCourseObjs = courses.filter((c) => selectedCourses.includes(c.id));
@@ -153,10 +175,10 @@ export function StudentView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200">
+      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "overview"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -166,7 +188,7 @@ export function StudentView() {
         </button>
         <button
           onClick={() => setActiveTab("payments")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "payments"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -176,7 +198,7 @@ export function StudentView() {
         </button>
         <button
           onClick={() => setActiveTab("courses")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "courses"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -186,13 +208,23 @@ export function StudentView() {
         </button>
         <button
           onClick={() => setActiveTab("results")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "results"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           Semester Results & GPA
+        </button>
+        <button
+          onClick={() => setActiveTab("exams")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "exams"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Examination Timetable
         </button>
       </div>
 
@@ -236,6 +268,25 @@ export function StudentView() {
                   </span>
                 </div>
               ))}
+            </div>
+
+            {/* CGPA Trajectory Chart */}
+            <div className="pt-4 border-t border-slate-100">
+              <span className="font-bold text-xs text-navy-950 block mb-1">
+                Cumulative CGPA Progression Trajectory
+              </span>
+              <p className="text-[11px] text-slate-400 mb-3">Academic performance curve across registered semesters</p>
+              <div className="h-44 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={cgpaHistory}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="semester" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[3.0, 5.0]} tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="cgpa" stroke="#2563eb" fill="#2563eb" fillOpacity={0.15} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
@@ -353,7 +404,7 @@ export function StudentView() {
                     <th className="p-3">Course Code</th>
                     <th className="p-3">Title</th>
                     <th className="p-3 text-center">Credit Units</th>
-                    <th className="p-3">Status</th>
+                    <th className="p-3">Category</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -427,6 +478,48 @@ export function StudentView() {
                     <td className="p-3 text-center font-mono font-black">{sc.totalScore}</td>
                     <td className="p-3 text-center font-bold text-emerald-700">{sc.grade}</td>
                     <td className="p-3 text-center font-mono font-bold text-slate-600">{sc.gradePoints}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Examination Timetable */}
+      {activeTab === "exams" && (
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="p-4 border-b flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-sm text-navy-950">Senate Approved Examination Schedule</h3>
+              <p className="text-xs text-slate-500">Hall seating allocations, examination dates, and reporting times</p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">
+              Exam Clearance Confirmed
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 font-bold border-b">
+                <tr>
+                  <th className="p-3">Course Code</th>
+                  <th className="p-3">Course Title</th>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Time</th>
+                  <th className="p-3">Assigned Venue</th>
+                  <th className="p-3">Invigilator</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {examSchedules.map((ex) => (
+                  <tr key={ex.id} className="hover:bg-slate-50">
+                    <td className="p-3 font-mono font-bold text-brand-700">{ex.courseCode}</td>
+                    <td className="p-3 font-semibold text-navy-950">{ex.courseTitle}</td>
+                    <td className="p-3 font-medium text-slate-800">{ex.date}</td>
+                    <td className="p-3 font-mono text-slate-600">{ex.startTime} – {ex.endTime}</td>
+                    <td className="p-3 text-slate-700">{ex.venue}</td>
+                    <td className="p-3 text-slate-600">{ex.invigilatorName}</td>
                   </tr>
                 ))}
               </tbody>

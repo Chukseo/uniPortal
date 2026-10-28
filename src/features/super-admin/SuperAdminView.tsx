@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useDemoStore } from "@/lib/demo-data/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { Institution } from "@/types";
 import {
   Building2,
   Users,
@@ -17,7 +18,22 @@ import {
   AlertTriangle,
   History,
   FileSpreadsheet,
+  Edit2,
+  X,
+  Sliders,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 export function SuperAdminView() {
   const {
@@ -25,12 +41,18 @@ export function SuperAdminView() {
     currentInstitutionId,
     setCurrentInstitutionId,
     toggleInstitutionStatus,
+    updateInstitution,
     auditEvents,
     resetDemoData,
     setGuidedTourOpen,
   } = useDemoStore();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "tenants" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "tenants" | "analytics" | "audit" | "config">("overview");
+  const [selectedInstForEdit, setSelectedInstForEdit] = useState<Institution | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editMotto, setEditMotto] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editStatus, setEditStatus] = useState<"Active" | "Maintenance" | "Registration Closed">("Active");
 
   // Multi-institution aggregate statistics
   const totalInstitutions = institutions.length;
@@ -39,6 +61,39 @@ export function SuperAdminView() {
   const totalApplicants = institutions.reduce((sum, i) => sum + i.stats.totalApplicants, 0);
   const totalStaff = institutions.reduce((sum, i) => sum + i.stats.totalStaff, 0);
   const totalSimulatedRevenue = institutions.reduce((sum, i) => sum + i.stats.simulatedRevenue, 0);
+
+  // Recharts data
+  const tenantRevenueData = institutions.map((inst) => ({
+    name: inst.shortName,
+    revenue: inst.stats.simulatedRevenue,
+    students: inst.stats.totalStudents,
+  }));
+
+  const tenantStudentRatio = institutions.map((inst, idx) => ({
+    name: inst.shortName,
+    value: inst.stats.totalStudents,
+    color: idx === 0 ? "#1e40af" : idx === 1 ? "#0f766e" : "#7c2d12",
+  }));
+
+  const handleEditClick = (inst: Institution) => {
+    setSelectedInstForEdit(inst);
+    setEditName(inst.name);
+    setEditMotto(inst.motto);
+    setEditCity(inst.city);
+    setEditStatus(inst.portalStatus);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInstForEdit) return;
+    updateInstitution(selectedInstForEdit.id, {
+      name: editName,
+      motto: editMotto,
+      city: editCity,
+      portalStatus: editStatus,
+    });
+    setSelectedInstForEdit(null);
+  };
 
   const exportAuditCSV = () => {
     const headers = ["Event ID", "Timestamp", "Actor", "Role", "Institution", "Action", "Outcome", "Reason"];
@@ -154,20 +209,20 @@ export function SuperAdminView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200">
+      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "overview"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          Institutional Breakdown
+          Institutional Overview
         </button>
         <button
           onClick={() => setActiveTab("tenants")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "tenants"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -176,14 +231,34 @@ export function SuperAdminView() {
           Tenant Configuration ({institutions.length})
         </button>
         <button
+          onClick={() => setActiveTab("analytics")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "analytics"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Multi-Tenant Revenue Analytics
+        </button>
+        <button
           onClick={() => setActiveTab("audit")}
-          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "audit"
               ? "border-brand-700 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          Platform Audit Log ({auditEvents.length})
+          Global Audit Log ({auditEvents.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("config")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "config"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Platform Configuration
         </button>
       </div>
 
@@ -249,10 +324,11 @@ export function SuperAdminView() {
 
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                     <button
-                      onClick={() => toggleInstitutionStatus(inst.id)}
-                      className="text-xs text-slate-500 hover:text-navy-950 font-medium"
+                      onClick={() => handleEditClick(inst)}
+                      className="text-xs text-slate-600 hover:text-brand-700 font-semibold flex items-center space-x-1"
                     >
-                      Toggle Status
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit Tenant</span>
                     </button>
                     <button
                       onClick={() => setCurrentInstitutionId(inst.id)}
@@ -335,6 +411,12 @@ export function SuperAdminView() {
                     </td>
                     <td className="p-3 text-right space-x-2">
                       <button
+                        onClick={() => handleEditClick(inst)}
+                        className="text-xs text-slate-600 hover:text-navy-950 font-semibold"
+                      >
+                        Edit
+                      </button>
+                      <button
                         onClick={() => toggleInstitutionStatus(inst.id)}
                         className="text-xs text-slate-600 hover:text-navy-950 font-semibold"
                       >
@@ -351,6 +433,56 @@ export function SuperAdminView() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Analytics (Recharts Multi-Tenant Comparison) */}
+      {activeTab === "analytics" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+              <h3 className="font-bold text-sm text-navy-950 mb-1">Simulated Tuition Revenue Comparison</h3>
+              <p className="text-xs text-slate-500 mb-4">Total collections across universities, polytechnics, and colleges</p>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={tenantRevenueData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₦${(v / 1000000).toFixed(0)}M`} />
+                    <Tooltip formatter={(v: any) => formatCurrency(Number(v))} />
+                    <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+              <h3 className="font-bold text-sm text-navy-950 mb-1">Enrolled Population Share</h3>
+              <p className="text-xs text-slate-500 mb-4">Student headcounts across tenants</p>
+              <div className="h-64 w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={tenantStudentRatio}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      label
+                    >
+                      {tenantStudentRatio.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -415,6 +547,93 @@ export function SuperAdminView() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Tab: Platform Configuration */}
+      {activeTab === "config" && (
+        <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4 text-xs">
+          <h3 className="font-bold text-base text-navy-950">Multi-Tenant Platform Operational Parameters</h3>
+          <p className="text-slate-600 leading-relaxed">
+            Centralized platform settings enforced across all higher institutions connected to UniCore.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="p-4 border rounded-xl bg-slate-50 space-y-1.5">
+              <span className="font-bold text-navy-950 block">Tenant Data Isolation Policy</span>
+              <p className="text-slate-600">Row-level isolation tag applied to all queries with institutional ID partitioning.</p>
+            </div>
+            <div className="p-4 border rounded-xl bg-slate-50 space-y-1.5">
+              <span className="font-bold text-navy-950 block">Access-Code Rotation & TTL</span>
+              <p className="text-slate-600">30-day default expiry on stage codes. Single-use invalidation upon course submission.</p>
+            </div>
+            <div className="p-4 border rounded-xl bg-slate-50 space-y-1.5">
+              <span className="font-bold text-navy-950 block">NUC CCMAS Compliance Mode</span>
+              <p className="text-slate-600">5.0 Maximum Grade Point Average grading engine with mandatory 70/30 weighting.</p>
+            </div>
+            <div className="p-4 border rounded-xl bg-slate-50 space-y-1.5">
+              <span className="font-bold text-navy-950 block">Audit Ledger Append-Only Guarantee</span>
+              <p className="text-slate-600">Simulated immutable compliance logging with correlation IDs for all bursary and senate events.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Institution Modal */}
+      {selectedInstForEdit && (
+        <div className="fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleSaveEdit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b">
+              <h3 className="font-bold text-navy-950 text-sm">Edit Institution Parameters</h3>
+              <button type="button" onClick={() => setSelectedInstForEdit(null)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="text-xs space-y-3">
+              <div>
+                <label className="font-semibold block mb-1">Institution Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">Motto / Slogan</label>
+                <input
+                  type="text"
+                  value={editMotto}
+                  onChange={(e) => setEditMotto(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">City / Campus</label>
+                <input
+                  type="text"
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">Portal Operational Status</label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as any)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white"
+                >
+                  <option value="Active">Active & Open</option>
+                  <option value="Maintenance">Maintenance Mode</option>
+                  <option value="Registration Closed">Registration Closed</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 pt-2 border-t">
+              <button type="button" onClick={() => setSelectedInstForEdit(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
+              <button type="submit" className="px-4 py-1.5 text-xs font-bold bg-brand-700 text-white rounded-lg">Save Changes</button>
+            </div>
+          </form>
         </div>
       )}
     </div>

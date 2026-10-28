@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useDemoStore } from "@/lib/demo-data/store";
+import { UserRole } from "@/types";
 import {
   Settings,
   Calendar,
@@ -14,6 +15,10 @@ import {
   AlertTriangle,
   X,
   FileCheck,
+  Users,
+  Award,
+  Shield,
+  Edit2,
 } from "lucide-react";
 
 export function IctAdminView() {
@@ -24,17 +29,24 @@ export function IctAdminView() {
     departments,
     programmes,
     announcements,
+    staffMembers,
+    gradingPolicy,
+    auditEvents,
     addFaculty,
     addDepartment,
     addProgramme,
     addSession,
     addAnnouncement,
+    updateStaffRole,
+    updateGradingPolicy,
   } = useDemoStore();
 
-  const [activeTab, setActiveTab] = useState<"sessions" | "faculties" | "programmes" | "policy" | "announcements">("sessions");
+  const [activeTab, setActiveTab] = useState<
+    "sessions" | "faculties" | "programmes" | "policy" | "grading" | "staff" | "announcements"
+  >("sessions");
 
   // Modal states
-  const [modalType, setModalType] = useState<"faculty" | "dept" | "prog" | "session" | "announcement" | null>(null);
+  const [modalType, setModalType] = useState<"faculty" | "dept" | "prog" | "session" | "announcement" | "grading" | null>(null);
 
   // Form states
   const [facName, setFacName] = useState("");
@@ -59,6 +71,11 @@ export function IctAdminView() {
   const [annTitle, setAnnTitle] = useState("");
   const [annContent, setAnnContent] = useState("");
   const [annAudience, setAnnAudience] = useState<"All" | "Students" | "Lecturers">("All");
+
+  // Grading Policy Form State
+  const [policyMaxCa, setPolicyMaxCa] = useState(gradingPolicy.maxCaMarks || 30);
+  const [policyMaxExam, setPolicyMaxExam] = useState(gradingPolicy.maxExamMarks || 70);
+  const [policyMinPass, setPolicyMinPass] = useState(gradingPolicy.minPassScore || 40);
 
   const handleAddFaculty = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +141,16 @@ export function IctAdminView() {
     setAnnContent("");
   };
 
+  const handleSaveGradingPolicy = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateGradingPolicy({
+      maxCaMarks: policyMaxCa,
+      maxExamMarks: policyMaxExam,
+      minPassScore: policyMinPass,
+    });
+    setModalType(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -138,7 +165,7 @@ export function IctAdminView() {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Academic structure, session timelines, curricula, and access-code policy for {currentInstitution.name}.
+            Academic structure, session timelines, curricula, grading rules, and access-code policy for {currentInstitution.name}.
           </p>
         </div>
 
@@ -186,6 +213,16 @@ export function IctAdminView() {
           Degree Programmes
         </button>
         <button
+          onClick={() => setActiveTab("grading")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "grading"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Grading Scale Configuration
+        </button>
+        <button
           onClick={() => setActiveTab("policy")}
           className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
             activeTab === "policy"
@@ -194,6 +231,16 @@ export function IctAdminView() {
           }`}
         >
           Access-Code Policy Engine
+        </button>
+        <button
+          onClick={() => setActiveTab("staff")}
+          className={`pb-3 px-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+            activeTab === "staff"
+              ? "border-brand-700 text-brand-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Staff Account Roles ({staffMembers.length})
         </button>
         <button
           onClick={() => setActiveTab("announcements")}
@@ -354,6 +401,69 @@ export function IctAdminView() {
         </div>
       )}
 
+      {/* Tab: Grading Scale Configuration */}
+      {activeTab === "grading" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-sm text-navy-950">Senate Grading Scale & Score Cutoff Policy</h3>
+              <p className="text-xs text-slate-500">Configures maximum assessment marks and letter grade boundary benchmarks</p>
+            </div>
+            <button
+              onClick={() => setModalType("grading")}
+              className="px-3.5 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center space-x-1.5"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              <span>Edit Senate Weightings</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-500 text-xs font-semibold block">Continuous Assessment (CA) Max</span>
+              <p className="text-2xl font-black text-navy-950 mt-1">{gradingPolicy.maxCaMarks} Marks</p>
+              <span className="text-[11px] text-slate-400 mt-1 block">Tests, quizzes, laboratory practicals</span>
+            </div>
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-500 text-xs font-semibold block">Examination Marks Max</span>
+              <p className="text-2xl font-black text-navy-950 mt-1">{gradingPolicy.maxExamMarks} Marks</p>
+              <span className="text-[11px] text-slate-400 mt-1 block">End of semester written exam</span>
+            </div>
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <span className="text-slate-500 text-xs font-semibold block">Minimum Pass Score</span>
+              <p className="text-2xl font-black text-emerald-700 mt-1">{gradingPolicy.minPassScore}%</p>
+              <span className="text-[11px] text-slate-400 mt-1 block">Minimum benchmark for Grade E</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-4 border-b">
+              <h4 className="font-bold text-sm text-navy-950">Active NUC 5-Point Grade Mapping</h4>
+            </div>
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 font-bold border-b">
+                <tr>
+                  <th className="p-3">Letter Grade</th>
+                  <th className="p-3">Score Range</th>
+                  <th className="p-3 text-center">Grade Points</th>
+                  <th className="p-3">Academic Classification Remark</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {gradingPolicy.scales.map((s) => (
+                  <tr key={s.grade} className="hover:bg-slate-50">
+                    <td className="p-3 font-bold text-navy-950 text-sm">{s.grade}</td>
+                    <td className="p-3 font-mono">{s.minScore}% – {s.maxScore}%</td>
+                    <td className="p-3 text-center font-mono font-bold text-brand-700">{s.points}</td>
+                    <td className="p-3 font-medium text-slate-700">{s.remark}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Tab: Policy */}
       {activeTab === "policy" && (
         <div className="space-y-4">
@@ -384,6 +494,45 @@ export function IctAdminView() {
                 <p className="text-slate-600 mt-1">Requires approved course registration between 12-24 credit units. Generates: <code>UNI-EXM-...</code></p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Staff Roles */}
+      {activeTab === "staff" && (
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="font-bold text-sm text-navy-950">Staff Accounts & System Role Mapping</h3>
+            <span className="text-xs text-slate-500">{staffMembers.length} Accounts</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 font-bold border-b">
+                <tr>
+                  <th className="p-3">Staff ID</th>
+                  <th className="p-3">Staff Member</th>
+                  <th className="p-3">Rank / Title</th>
+                  <th className="p-3">Assigned Role</th>
+                  <th className="p-3">Appointed Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {staffMembers.map((st) => (
+                  <tr key={st.id} className="hover:bg-slate-50">
+                    <td className="p-3 font-mono font-bold text-brand-700">{st.staffId}</td>
+                    <td className="p-3 font-bold text-navy-950">{st.fullName}</td>
+                    <td className="p-3 text-slate-600">{st.rank}</td>
+                    <td className="p-3">
+                      <span className="capitalize font-semibold text-brand-800 bg-brand-50 px-2 py-0.5 rounded text-[11px]">
+                        {st.role.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="p-3 text-slate-500">{st.appointmentDate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -421,6 +570,72 @@ export function IctAdminView() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Edit Grading Policy Modal */}
+      {modalType === "grading" && (
+        <div className="fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleSaveGradingPolicy} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b">
+              <h3 className="font-bold text-navy-950 text-sm">Configure Senate Grading Policy</h3>
+              <button type="button" onClick={() => setModalType(null)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="text-xs space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold block mb-1">Max CA Marks</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={50}
+                    value={policyMaxCa}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || 0;
+                      setPolicyMaxCa(v);
+                      setPolicyMaxExam(100 - v);
+                    }}
+                    className="w-full px-3 py-2 border rounded-xl font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Max Exam Marks</label>
+                  <input
+                    type="number"
+                    min={50}
+                    max={90}
+                    value={policyMaxExam}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || 0;
+                      setPolicyMaxExam(v);
+                      setPolicyMaxCa(100 - v);
+                    }}
+                    className="w-full px-3 py-2 border rounded-xl font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Minimum Pass Score (Grade E Cutoff %)</label>
+                <input
+                  type="number"
+                  min={30}
+                  max={50}
+                  value={policyMinPass}
+                  onChange={(e) => setPolicyMinPass(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-xl font-mono"
+                />
+              </div>
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px]">
+                Total: <strong>{policyMaxCa + policyMaxExam} Marks (100%)</strong>. Changes immediately update lecturer grading limits and Senate pass/fail calculations.
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 pt-2 border-t">
+              <button type="button" onClick={() => setModalType(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
+              <button type="submit" className="px-4 py-1.5 text-xs font-bold bg-brand-700 text-white rounded-lg">Apply Policy</button>
+            </div>
+          </form>
         </div>
       )}
 

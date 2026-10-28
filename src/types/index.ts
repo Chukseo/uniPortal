@@ -378,3 +378,63 @@ export interface GradingPolicy {
     remark: string;
   }[];
 }
+
+export interface ExaminationScheduleItem {
+  id: string;
+  institutionId: string;
+  courseId: string;
+  courseCode: string;
+  courseTitle: string;
+  date: string; // e.g. "2025-02-18"
+  startTime: string; // e.g. "09:00 AM"
+  endTime: string; // e.g. "12:00 PM"
+  venue: string; // e.g. "Twin ICT Hall A"
+  invigilatorName: string;
+  capacity: number;
+}
+
+export interface GraduationCandidate {
+  id: string;
+  studentId: string;
+  matricNumber: string;
+  studentName: string;
+  facultyName: string;
+  departmentName: string;
+  programmeName: string;
+  cgpa: number;
+  classOfDegree: "First Class" | "Second Class Upper" | "Second Class Lower" | "Third Class";
+  libraryClearance: boolean;
+  bursaryClearance: boolean;
+  departmentClearance: boolean;
+  senateApproval: boolean;
+  convocationSession: string;
+}
+
+export interface DefermentRequest {
+  id: string;
+  studentId: string;
+  matricNumber: string;
+  studentName: string;
+  academicSession: string;
+  semester: string;
+  reason: string;
+  submittedAt: string;
+  status: "Pending" | "Approved" | "Declined";
+  decisionNote?: string;
+}
+
+export interface StaffMember {
+  id: string;
+  institutionId: string;
+  staffId: string; // e.g. "STF/2021/004"
+  fullName: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  facultyId?: string;
+  departmentId?: string;
+  rank: string; // e.g. "Senior Lecturer", "Associate Professor", "Higher Executive Officer"
+  status: "Active" | "On Leave" | "Suspended";
+  appointmentDate: string;
+}
+

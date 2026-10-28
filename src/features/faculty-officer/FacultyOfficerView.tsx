@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useDemoStore } from "@/lib/demo-data/store";
+import { Course } from "@/types";
 import {
   Building,
   BookOpen,
@@ -10,6 +11,9 @@ import {
   CheckCircle2,
   Clock,
   ChevronRight,
+  UserCheck,
+  X,
+  Plus,
 } from "lucide-react";
 
 export function FacultyOfficerView() {
@@ -19,13 +23,27 @@ export function FacultyOfficerView() {
     departments,
     courses,
     registrations,
+    staffMembers,
     approveCourseRegistration,
+    assignLecturerToCourse,
   } = useDemoStore();
 
   const [activeTab, setActiveTab] = useState<"courses" | "vetting">("courses");
+  const [selectedCourseForAssign, setSelectedCourseForAssign] = useState<Course | null>(null);
+  const [selectedLecturerId, setSelectedLecturerId] = useState("");
 
   const faculty = faculties[0];
   const facultyDepts = departments.filter((d) => d.facultyId === faculty?.id);
+  const academicStaff = staffMembers.filter((s) => s.role === "lecturer");
+
+  const handleAssignSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourseForAssign || !selectedLecturerId) return;
+    const stf = academicStaff.find((s) => s.id === selectedLecturerId);
+    if (!stf) return;
+    assignLecturerToCourse(selectedCourseForAssign.id, stf.id, stf.fullName);
+    setSelectedCourseForAssign(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -80,8 +98,11 @@ export function FacultyOfficerView() {
       {activeTab === "courses" && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="font-bold text-sm text-navy-950">First Semester Teaching Assignments</h3>
-            <span className="text-xs text-slate-500">{courses.length} Active Courses</span>
+            <div>
+              <h3 className="font-bold text-sm text-navy-950">First Semester Teaching Assignments</h3>
+              <p className="text-xs text-slate-500">Allocated course lecturers submit grades for Senate scrutiny</p>
+            </div>
+            <span className="text-xs text-slate-500 font-semibold">{courses.length} Active Courses</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -90,10 +111,11 @@ export function FacultyOfficerView() {
                 <tr>
                   <th className="p-3">Course Code</th>
                   <th className="p-3">Course Title</th>
-                  <th className="p-3">Units</th>
+                  <th className="p-3 text-center">Units</th>
                   <th className="p-3">Level</th>
                   <th className="p-3">Assigned Academic Staff</th>
-                  <th className="p-3">Course Classification</th>
+                  <th className="p-3">Classification</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -104,7 +126,7 @@ export function FacultyOfficerView() {
                     <td className="p-3 font-mono text-center">{c.creditUnits}</td>
                     <td className="p-3 font-semibold">{c.level}</td>
                     <td className="p-3 font-medium text-slate-700">
-                      {c.lecturerName || "Unassigned"}
+                      {c.lecturerName || <span className="text-amber-600 italic">Unassigned</span>}
                     </td>
                     <td className="p-3">
                       <span
@@ -116,6 +138,17 @@ export function FacultyOfficerView() {
                       >
                         {c.type}
                       </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => {
+                          setSelectedCourseForAssign(c);
+                          setSelectedLecturerId(academicStaff[0]?.id || "");
+                        }}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        Assign Lecturer
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -172,6 +205,47 @@ export function FacultyOfficerView() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Assign Lecturer Modal */}
+      {selectedCourseForAssign && (
+        <div className="fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleAssignSubmit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b">
+              <div>
+                <h3 className="font-bold text-navy-950 text-sm">Assign Course Lecturer</h3>
+                <span className="text-xs text-brand-700 font-mono font-bold">
+                  {selectedCourseForAssign.code}: {selectedCourseForAssign.title}
+                </span>
+              </div>
+              <button type="button" onClick={() => setSelectedCourseForAssign(null)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="text-xs space-y-3">
+              <div>
+                <label className="font-semibold block mb-1">Select Departmental Academic Staff *</label>
+                <select
+                  value={selectedLecturerId}
+                  onChange={(e) => setSelectedLecturerId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl bg-white text-xs"
+                >
+                  {academicStaff.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.fullName} ({st.rank})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                The assigned lecturer will gain grade entry access for continuous assessment and examination scores in their dedicated dashboard.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-2 pt-2 border-t">
+              <button type="button" onClick={() => setSelectedCourseForAssign(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
+              <button type="submit" className="px-4 py-1.5 text-xs font-bold bg-brand-700 text-white rounded-lg">Confirm Allocation</button>
+            </div>
+          </form>
         </div>
       )}
     </div>

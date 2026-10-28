@@ -11,6 +11,7 @@ import { GuidedTourModal } from "@/components/layout/GuidedTourModal";
 import { DocumentModal } from "@/features/documents/DocumentModal";
 
 import { SuperAdminView } from "@/features/super-admin/SuperAdminView";
+import { SchoolAdminView } from "@/features/school-admin/SchoolAdminView";
 import { IctAdminView } from "@/features/ict-admin/IctAdminView";
 import { RegistrarView } from "@/features/registrar/RegistrarView";
 import { AdmissionsView } from "@/features/admissions/AdmissionsView";
@@ -21,6 +22,7 @@ import { ExamOfficerView } from "@/features/exam-officer/ExamOfficerView";
 import { StudentView } from "@/features/student/StudentView";
 import { ApplicantView } from "@/features/applicant/ApplicantView";
 import { AuditView } from "@/features/audit/AuditView";
+import { ReportsView } from "@/features/reports/ReportsView";
 import { UserRole } from "@/types";
 
 export default function DemoPortalPage() {
@@ -52,14 +54,23 @@ export default function DemoPortalPage() {
     setDocModalOpen(true);
   };
 
-  // Render role-specific view
+  // Render role-specific view or global utility view
   const renderCurrentView = () => {
+    // If the active navigation item points to Reports or Audit
+    if (activeTab === "reports") {
+      return <ReportsView />;
+    }
+    if (activeTab === "audit") {
+      return <AuditView />;
+    }
+
     switch (currentRole) {
       case "super_admin":
         return <SuperAdminView />;
+      case "school_admin":
+        return <SchoolAdminView />;
       case "ict_admin":
         return <IctAdminView />;
-      case "school_admin":
       case "registrar":
         return <RegistrarView />;
       case "admissions_officer":
