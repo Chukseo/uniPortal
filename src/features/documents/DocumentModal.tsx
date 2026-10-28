@@ -319,6 +319,135 @@ export function DocumentModal({ isOpen, docType, onClose }: DocumentModalProps) 
               </div>
             </div>
           )}
+
+          {docType === "exam_docket" && (
+            <div className="mt-6 space-y-4 text-xs font-sans">
+              <h2 className="text-center font-bold text-base uppercase underline py-1">
+                OFFICIAL SENATE EXAMINATION CLEARANCE DOCKET
+              </h2>
+
+              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 border rounded-xl">
+                <div>
+                  <span className="text-slate-500 block">Candidate Name:</span>
+                  <span className="font-bold text-sm text-navy-950">{student.firstName} {student.lastName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Matriculation Number:</span>
+                  <span className="font-mono font-bold text-brand-700">{student.matricNumber}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Faculty & Department:</span>
+                  <span className="font-medium text-slate-800">Computing & IT • Computer Science</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Session / Level:</span>
+                  <span className="font-medium text-slate-800">{student.level} • 2024/2025 First Semester</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-bold block">FINANCIALLY & ACADEMICALLY CLEARED</span>
+                    <span className="text-[11px] text-emerald-800">Bursary tuition fully settled • 19 Units course registration vetted</span>
+                  </div>
+                </div>
+                <span className="font-mono font-black text-xs px-2.5 py-1 bg-emerald-200 rounded">
+                  PASS CODE: UNI-EXM-3312-K7L
+                </span>
+              </div>
+
+              <table className="w-full text-left border border-slate-200 mt-2 text-xs">
+                <thead className="bg-slate-100 font-bold">
+                  <tr>
+                    <th className="p-2 border">Course Code</th>
+                    <th className="p-2 border">Course Title</th>
+                    <th className="p-2 border text-center">Date</th>
+                    <th className="p-2 border text-center">Time</th>
+                    <th className="p-2 border">Venue & Seat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-2 border font-mono font-bold">CSC 301</td>
+                    <td className="p-2 border">Database Management Systems</td>
+                    <td className="p-2 border text-center font-mono">2025-02-18</td>
+                    <td className="p-2 border text-center font-mono">09:00 AM</td>
+                    <td className="p-2 border">ICT Hall A — Seat #042</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border font-mono font-bold">CSC 303</td>
+                    <td className="p-2 border">Operating Systems</td>
+                    <td className="p-2 border text-center font-mono">2025-02-20</td>
+                    <td className="p-2 border text-center font-mono">01:00 PM</td>
+                    <td className="p-2 border">Faculty Theater B — Seat #018</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border font-mono font-bold">CSC 305</td>
+                    <td className="p-2 border">Data Structures & Algorithm</td>
+                    <td className="p-2 border text-center font-mono">2025-02-24</td>
+                    <td className="p-2 border text-center font-mono">09:00 AM</td>
+                    <td className="p-2 border">Main Auditorium — Seat #104</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="pt-6 flex justify-between items-end text-xs">
+                <div>
+                  <div className="h-6 border-b border-slate-400 w-36"></div>
+                  <p className="mt-1 font-semibold">Chief Invigilator Stamp</p>
+                </div>
+                <div>
+                  <div className="h-6 border-b border-slate-400 w-36"></div>
+                  <p className="mt-1 font-semibold">Dean of Student Affairs</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {docType === "convocation_certificate" && (
+            <div className="mt-6 space-y-5 text-center font-serif text-slate-900 border-2 border-amber-300 p-8 rounded-2xl bg-amber-50/20">
+              <span className="text-[11px] font-sans font-bold uppercase tracking-widest text-slate-500 block">
+                By the Authority of the Governing Council and Senate of
+              </span>
+              <h2 className="text-2xl font-black font-sans uppercase tracking-wide text-navy-950">
+                {currentInstitution.name}
+              </h2>
+              <p className="text-xs italic text-slate-600">
+                Be it known to all that
+              </p>
+              <h3 className="text-xl font-bold font-sans text-brand-950 underline">
+                {student.firstName.toUpperCase()} {student.lastName.toUpperCase()} {student.otherNames?.toUpperCase()}
+              </h3>
+              <p className="text-xs text-slate-700 max-w-lg mx-auto leading-relaxed">
+                having satisfied all the requirements of the statutes and passed the prescribed examinations, has this day been admitted by the Senate to the Degree of
+              </p>
+              <div className="p-3 bg-white border border-amber-400 rounded-xl inline-block max-w-md">
+                <span className="text-base font-black font-sans text-navy-950 block">
+                  BACHELOR OF SCIENCE WITH FIRST CLASS HONOURS
+                </span>
+                <span className="text-xs font-sans text-slate-600">IN COMPUTER SCIENCE</span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-sans">
+                with all rights, privileges, and distinctions appertaining thereto.
+              </p>
+
+              <div className="pt-8 grid grid-cols-3 gap-4 font-sans text-[11px] text-slate-700 items-end">
+                <div>
+                  <div className="h-6 border-b border-slate-400 w-32 mx-auto"></div>
+                  <p className="mt-1 font-semibold">Vice Chancellor</p>
+                </div>
+                <div className="border border-amber-400 p-2 rounded-full w-20 h-20 mx-auto flex items-center justify-center font-bold text-amber-800 text-[10px]">
+                  GREAT SEAL
+                </div>
+                <div>
+                  <div className="h-6 border-b border-slate-400 w-32 mx-auto"></div>
+                  <p className="mt-1 font-semibold">Registrar</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer info (Hidden during print) */}

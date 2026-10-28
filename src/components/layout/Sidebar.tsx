@@ -209,6 +209,20 @@ export function Sidebar({ currentTab, onTabChange, onOpenDocModal }: SidebarProp
               <Award className="w-3.5 h-3.5 text-purple-400" />
               <span>Unofficial Result Slip</span>
             </button>
+            <button
+              onClick={() => onOpenDocModal("exam_docket")}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-navy-900 hover:text-rose-300 transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
+              <span>Examination Docket Pass</span>
+            </button>
+            <button
+              onClick={() => onOpenDocModal("convocation_certificate")}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-navy-900 hover:text-amber-300 transition-colors"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+              <span>Convocation Degree Award</span>
+            </button>
           </div>
         )}
       </nav>

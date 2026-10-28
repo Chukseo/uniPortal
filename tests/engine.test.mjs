@@ -123,3 +123,35 @@ test("Continuous Assessment (30) and Exam (70) score validation accurately sums 
   assert.equal(clamped.total, 100);
   assert.equal(clamped.grade, "A");
 });
+
+test("Stage requirement sequencing verifies prerequisite dependencies correctly", () => {
+  const STAGE_ORDER = [
+    "application_submitted",
+    "admission_accepted",
+    "acceptance_fee_cleared",
+    "student_activated",
+    "school_fees_cleared",
+    "course_registration_unlocked",
+    "course_registration_completed",
+    "exam_eligible",
+    "results_viewable",
+  ];
+
+  const canAdvance = (completedStages, targetStage) => {
+    const targetIdx = STAGE_ORDER.indexOf(targetStage);
+    if (targetIdx <= 0) return true;
+    const requiredPrev = STAGE_ORDER[targetIdx - 1];
+    return completedStages.includes(requiredPrev);
+  };
+
+  assert.equal(canAdvance(["application_submitted"], "admission_accepted"), true);
+  assert.equal(canAdvance(["application_submitted"], "acceptance_fee_cleared"), false);
+  assert.equal(
+    canAdvance(["application_submitted", "admission_accepted", "acceptance_fee_cleared"], "student_activated"),
+    true
+  );
+  assert.equal(
+    canAdvance(["application_submitted", "admission_accepted", "acceptance_fee_cleared", "student_activated"], "course_registration_unlocked"),
+    false // Requires school_fees_cleared first
+  );
+});
